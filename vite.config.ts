@@ -45,6 +45,7 @@ function meetsApiPlugin(): Plugin {
 }
 
 export default defineConfig({
+  base: '/MeetMyLove/',
   plugins: [react(), tailwindcss(), meetsApiPlugin()],
 })
 
