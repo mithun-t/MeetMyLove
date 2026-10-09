@@ -39,6 +39,13 @@ export interface HeatCell {
   band: HeatBand
 }
 
+export interface MonthlyPoint {
+  month: string
+  monthIndex: number
+  meetDays: number
+  tripCount: number
+}
+
 export interface SeasonPoint {
   season: string
   meetDays: number
@@ -84,6 +91,7 @@ export interface ComputedStats {
   firstDate: string
   latestDate: string
   annual: AnnualPoint[]
+  monthly: MonthlyPoint[]
   heatmap: HeatCell[]
   seasons: SeasonPoint[]
   weekdays: WeekdayPoint[]

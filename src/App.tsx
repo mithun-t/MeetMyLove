@@ -7,6 +7,7 @@ import type { Trip, YearData, YearFilter } from './types/reunion.ts'
 import { DashboardShell } from './components/layout/DashboardShell.tsx'
 import { KpiGrid } from './components/kpi/KpiGrid.tsx'
 import { AnnualChart } from './components/charts/AnnualChart.tsx'
+import { MonthlyWiseChart } from './components/charts/MonthlyWiseChart.tsx'
 import { MonthlyHeatmap } from './components/charts/MonthlyHeatmap.tsx'
 import { SeasonalRadar } from './components/charts/SeasonalRadar.tsx'
 import { WeekdayChart } from './components/charts/WeekdayChart.tsx'
@@ -66,6 +67,7 @@ export default function App() {
       <KpiGrid stats={stats} />
       <div className="grid w-full min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
         <AnnualChart data={stats.annual} className="lg:col-span-2" />
+        <MonthlyWiseChart data={stats.monthly} className="lg:col-span-2" />
         <MonthlyHeatmap cells={stats.heatmap} className="lg:col-span-2" />
         <SeasonalRadar data={stats.seasons} />
         <WeekdayChart data={stats.weekdays} />

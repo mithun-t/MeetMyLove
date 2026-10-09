@@ -7,6 +7,7 @@ import type {
   HeatBand,
   HeatCell,
   Milestone,
+  MonthlyPoint,
   SeasonPoint,
   TripRow,
   WeekdayPoint,
@@ -14,6 +15,7 @@ import type {
   YearFilter,
 } from '../types/reunion.ts'
 import {
+  MONTH_LABELS,
   WEEKDAY_LABELS,
   durationBucket,
   durationBucketOrder,
@@ -213,6 +215,25 @@ export function computeStats(years: YearData[]): ComputedStats {
   const heatmap = buildHeatmap(years, dates)
   const busiestMonth = heatmap.reduce((best, cell) => (cell.count > best.count ? cell : best))
 
+  const monthlyTotals: MonthlyPoint[] = MONTH_LABELS.map((month, idx) => ({
+    month,
+    monthIndex: idx,
+    meetDays: 0,
+    tripCount: 0,
+  }))
+
+  for (const iso of dates) {
+    const m = getMonth(parseISO(iso))
+    monthlyTotals[m].meetDays += 1
+  }
+
+  for (const row of rows) {
+    if (row.startDate) {
+      const m = getMonth(parseISO(row.startDate))
+      monthlyTotals[m].tripCount += 1
+    }
+  }
+
   const seasonTotals = new Map<string, number>(seasonOrder().map((season) => [season, 0]))
   const weekdayTotals = WEEKDAY_LABELS.map((day) => ({ day, meetDays: 0 }))
 
@@ -267,6 +288,7 @@ export function computeStats(years: YearData[]): ComputedStats {
     firstDate,
     latestDate,
     annual,
+    monthly: monthlyTotals,
     heatmap,
     seasons,
     weekdays,
