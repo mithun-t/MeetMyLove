@@ -946,6 +946,15 @@
         ],
         "meetCount": 4,
         "isMultiDayMeeting": true
+      },
+      {
+        "tripId": "2026-T21",
+        "meetDates": [
+          "2026-10-31",
+          "2026-11-01"
+        ],
+        "meetCount": 2,
+        "isMultiDayMeeting": true
       }
     ]
   }
