@@ -61,6 +61,15 @@ export interface DurationBucket {
   tripCount: number
 }
 
+export interface GapPoint {
+  tripId: string
+  date: string
+  label: string
+  year: number
+  gapDays: number
+  fromTripId: string
+}
+
 export interface CumulativePoint {
   date: string
   label: string
@@ -97,6 +106,7 @@ export interface ComputedStats {
   weekdays: WeekdayPoint[]
   durations: DurationBucket[]
   cumulative: CumulativePoint[]
+  gaps: GapPoint[]
   milestones: Milestone[]
   busiestMonth: HeatCell
 }

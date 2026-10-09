@@ -6,14 +6,21 @@ import { insertTripIntoYears } from './lib/meetManager.ts'
 import type { Trip, YearData, YearFilter } from './types/reunion.ts'
 import { DashboardShell } from './components/layout/DashboardShell.tsx'
 import { KpiGrid } from './components/kpi/KpiGrid.tsx'
+import { SuperlativesCard } from './components/kpi/SuperlativesCard.tsx'
 import { AnnualChart } from './components/charts/AnnualChart.tsx'
 import { MonthlyWiseChart } from './components/charts/MonthlyWiseChart.tsx'
+import { YearOverYearChart } from './components/charts/YearOverYearChart.tsx'
 import { MonthlyHeatmap } from './components/charts/MonthlyHeatmap.tsx'
+import { PaceRaceChart } from './components/charts/PaceRaceChart.tsx'
+import { TogetherRatioChart } from './components/charts/TogetherRatioChart.tsx'
+import { WeekendRatioChart } from './components/charts/WeekendRatioChart.tsx'
 import { SeasonalRadar } from './components/charts/SeasonalRadar.tsx'
 import { WeekdayChart } from './components/charts/WeekdayChart.tsx'
 import { DurationChart } from './components/charts/DurationChart.tsx'
 import { CumulativeChart } from './components/charts/CumulativeChart.tsx'
+import { GapTrendChart } from './components/charts/GapTrendChart.tsx'
 import { MilestoneTimeline } from './components/timeline/MilestoneTimeline.tsx'
+import { FutureProjectionsCard } from './components/timeline/FutureProjectionsCard.tsx'
 import { TripLog } from './components/table/TripLog.tsx'
 import { AddMeetModal } from './components/forms/AddMeetModal.tsx'
 
@@ -65,6 +72,7 @@ export default function App() {
       }
     >
       <KpiGrid stats={stats} />
+      <SuperlativesCard stats={stats} rows={rows} />
       <div className="grid w-full min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
         <AnnualChart data={stats.annual} className="lg:col-span-2" />
         <MonthlyWiseChart
@@ -72,12 +80,32 @@ export default function App() {
           years={stats.annual.map((point) => point.year)}
           className="lg:col-span-2"
         />
+        <YearOverYearChart cells={stats.heatmap} className="lg:col-span-2" />
+        <PaceRaceChart
+          rows={rows}
+          years={stats.annual.map((point) => point.year)}
+          className="lg:col-span-2"
+        />
+        <TogetherRatioChart
+          rows={rows}
+          years={stats.annual.map((point) => point.year)}
+        />
+        <WeekendRatioChart
+          rows={rows}
+          years={stats.annual.map((point) => point.year)}
+        />
         <MonthlyHeatmap cells={stats.heatmap} className="lg:col-span-2" />
         <SeasonalRadar data={stats.seasons} />
         <WeekdayChart data={stats.weekdays} />
         <DurationChart data={stats.durations} />
         <CumulativeChart data={stats.cumulative} />
+        <GapTrendChart
+          data={stats.gaps}
+          years={stats.annual.map((point) => point.year)}
+          className="lg:col-span-2"
+        />
       </div>
+      <FutureProjectionsCard stats={stats} rows={rows} />
       <MilestoneTimeline stats={stats} />
       <TripLog
         rows={filtered}

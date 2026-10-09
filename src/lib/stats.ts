@@ -4,6 +4,7 @@ import type {
   ComputedStats,
   CumulativePoint,
   DurationBucket,
+  GapPoint,
   HeatBand,
   HeatCell,
   Milestone,
@@ -204,9 +205,25 @@ export function computeStats(years: YearData[]): ComputedStats {
   const peakYear = annual.reduce((best, point) => (point.meetDays > best.meetDays ? point : best))
 
   const gaps = rows.slice(1).map((row, index) =>
-    differenceInCalendarDays(parseISO(row.startDate), parseISO(rows[index].startDate)),
+    differenceInCalendarDays(parseISO(row.startDate), parseISO(rows[index].endDate || rows[index].startDate)),
   )
-  const averageGapDays = gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length
+  const averageGapDays = gaps.length > 0 ? gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length : 0
+
+  const gapPoints: GapPoint[] = rows.slice(1).map((row, index) => {
+    const prev = rows[index]
+    const gap = Math.max(
+      0,
+      differenceInCalendarDays(parseISO(row.startDate), parseISO(prev.endDate || prev.startDate)),
+    )
+    return {
+      tripId: row.tripId,
+      date: row.startDate,
+      label: formatChartDate(row.startDate),
+      year: row.year,
+      gapDays: gap,
+      fromTripId: prev.tripId,
+    }
+  })
 
   const firstDate = dates[0] ?? rows[0].startDate
   const latestDate = dates[dates.length - 1] ?? rows[rows.length - 1].endDate
@@ -294,6 +311,7 @@ export function computeStats(years: YearData[]): ComputedStats {
     weekdays,
     durations,
     cumulative,
+    gaps: gapPoints,
     milestones: buildMilestones(rows, dates, longestTrip, busiestMonth),
     busiestMonth,
   }
