@@ -14,11 +14,11 @@ export function ChartCard({
   className?: string
 }) {
   return (
-    <section className={`w-full min-w-0 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5 ${className}`}>
+    <section className={`w-full min-w-0 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5 dark:border-stone-800 dark:bg-stone-900 ${className}`}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-stone-900">{title}</h2>
-          <p className="mt-1 text-sm text-stone-500">{subtitle}</p>
+          <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">{title}</h2>
+          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">{subtitle}</p>
         </div>
         {action && <div className="shrink-0">{action}</div>}
       </div>

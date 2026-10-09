@@ -8,6 +8,7 @@ export interface MeetFormInput {
   customDates: string[]
   tripId: string
   autoGenerateId: boolean
+  editingTripId?: string
 }
 
 export interface ValidationResult {
@@ -122,10 +123,18 @@ export function validateMeetInput(
   if (!resolvedTripId) {
     errors.tripId = 'Trip ID cannot be empty.'
   } else {
-    // Check if tripId already exists in this year
+    // Check if tripId already exists in this year (ignoring the trip being edited)
     const yearEntry = existingYears.find((y) => y.year === resolvedYear)
-    if (yearEntry && yearEntry.trips.some((t) => t.tripId.toLowerCase() === resolvedTripId.toLowerCase())) {
-      errors.tripId = `Trip ID "${resolvedTripId}" already exists for ${resolvedYear}.`
+    if (yearEntry) {
+      const isDuplicate = yearEntry.trips.some((t) => {
+        if (input.editingTripId && t.tripId.toLowerCase() === input.editingTripId.toLowerCase()) {
+          return false
+        }
+        return t.tripId.toLowerCase() === resolvedTripId.toLowerCase()
+      })
+      if (isDuplicate) {
+        errors.tripId = `Trip ID "${resolvedTripId}" already exists for ${resolvedYear}.`
+      }
     }
   }
 
@@ -169,4 +178,22 @@ export function insertTripIntoYears(
   })
 
   return cloned
+}
+
+export function deleteTripFromYears(years: YearData[], tripId: string): YearData[] {
+  const cloned: YearData[] = JSON.parse(JSON.stringify(years))
+  for (const yearEntry of cloned) {
+    yearEntry.trips = yearEntry.trips.filter((t) => t.tripId !== tripId)
+  }
+  return cloned.filter((y) => y.trips.length > 0)
+}
+
+export function updateTripInYears(
+  years: YearData[],
+  updatedTrip: Trip,
+  originalTripId: string,
+  targetYear: number,
+): YearData[] {
+  const afterDelete = deleteTripFromYears(years, originalTripId)
+  return insertTripIntoYears(afterDelete, updatedTrip, targetYear)
 }

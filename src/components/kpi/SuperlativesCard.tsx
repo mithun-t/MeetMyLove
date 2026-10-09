@@ -93,14 +93,14 @@ export function SuperlativesCard({
   }, [stats, rows])
 
   return (
-    <section className="w-full min-w-0 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
+    <section className="w-full min-w-0 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5 dark:border-stone-800 dark:bg-stone-900">
       <div className="flex items-center gap-2.5 mb-4">
-        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
           <Award size={18} />
         </span>
         <div>
-          <h2 className="text-base font-semibold text-stone-900">Trip Records & Superlatives</h2>
-          <p className="text-xs text-stone-500">
+          <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">Trip Records & Superlatives</h2>
+          <p className="text-xs text-stone-500 dark:text-stone-400">
             All-time milestones, records, and standout moments in our journey together.
           </p>
         </div>
@@ -112,19 +112,19 @@ export function SuperlativesCard({
           return (
             <div
               key={rec.title}
-              className="flex items-start gap-3.5 p-3.5 rounded-xl border border-stone-100 bg-stone-50/70 hover:bg-stone-50 transition-colors"
+              className="flex items-start gap-3.5 p-3.5 rounded-xl border border-stone-100 bg-stone-50/70 hover:bg-stone-50 transition-colors dark:border-stone-800 dark:bg-stone-800/50 dark:hover:bg-stone-800/80"
             >
-              <span className={`p-2.5 rounded-xl border shrink-0 ${rec.color}`}>
+              <span className={`p-2.5 rounded-xl border shrink-0 ${rec.color} dark:bg-opacity-20`}>
                 <Icon size={18} />
               </span>
               <div className="min-w-0">
-                <span className="block text-[11px] font-medium uppercase tracking-wider text-stone-400">
+                <span className="block text-[11px] font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500">
                   {rec.title}
                 </span>
-                <span className="block text-base font-bold text-stone-900 leading-snug">
+                <span className="block text-base font-bold text-stone-900 dark:text-stone-100 leading-snug">
                   {rec.value}
                 </span>
-                <p className="mt-0.5 text-xs text-stone-500 truncate" title={rec.desc}>
+                <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400 truncate" title={rec.desc}>
                   {rec.desc}
                 </p>
               </div>

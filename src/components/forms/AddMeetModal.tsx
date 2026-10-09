@@ -1,15 +1,15 @@
 import { useState, useId, useMemo } from 'react'
 import {
   Calendar,
-  CalendarRange,
   CheckCircle2,
   AlertCircle,
   X,
   Plus,
   Trash2,
   Sparkles,
+  Edit3,
 } from 'lucide-react'
-import type { Trip, YearData } from '../../types/reunion.ts'
+import type { Trip, TripRow, YearData } from '../../types/reunion.ts'
 import {
   type MeetFormInput,
   generateNextTripId,
@@ -20,20 +20,48 @@ interface AddMeetModalProps {
   isOpen: boolean
   onClose: () => void
   years: YearData[]
-  onSubmit: (newTrip: Trip, targetYear: number) => Promise<boolean>
+  tripToEdit?: TripRow | null
+  onSubmit: (newTrip: Trip, targetYear: number, originalTripId?: string) => Promise<boolean>
 }
 
-export function AddMeetModal({ isOpen, onClose, years, onSubmit }: AddMeetModalProps) {
-  const [mode, setMode] = useState<'single' | 'range' | 'custom'>('single')
-  const [singleDate, setSingleDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [customDates, setCustomDates] = useState<string[]>(() => [
-    new Date().toISOString().slice(0, 10),
-  ])
+interface FormInnerProps {
+  onClose: () => void
+  years: YearData[]
+  tripToEdit?: TripRow | null
+  onSubmit: (newTrip: Trip, targetYear: number, originalTripId?: string) => Promise<boolean>
+}
+
+function AddMeetFormInner({ onClose, years, tripToEdit, onSubmit }: FormInnerProps) {
+  const isEditing = Boolean(tripToEdit)
+
+  const [mode, setMode] = useState<'single' | 'range' | 'custom'>(() => {
+    if (!tripToEdit) return 'single'
+    return tripToEdit.meetDates.length === 1 ? 'single' : 'range'
+  })
+
+  const [singleDate, setSingleDate] = useState(() => {
+    if (tripToEdit?.startDate) return tripToEdit.startDate
+    return new Date().toISOString().slice(0, 10)
+  })
+
+  const [startDate, setStartDate] = useState(() => {
+    if (tripToEdit?.startDate) return tripToEdit.startDate
+    return new Date().toISOString().slice(0, 10)
+  })
+
+  const [endDate, setEndDate] = useState(() => {
+    if (tripToEdit?.endDate) return tripToEdit.endDate
+    return new Date().toISOString().slice(0, 10)
+  })
+
+  const [customDates, setCustomDates] = useState<string[]>(() => {
+    if (tripToEdit?.meetDates) return [...tripToEdit.meetDates]
+    return [new Date().toISOString().slice(0, 10)]
+  })
+
   const [newCustomDate, setNewCustomDate] = useState('')
-  const [tripId, setTripId] = useState('')
-  const [autoGenerateId, setAutoGenerateId] = useState(true)
+  const [tripId, setTripId] = useState(() => tripToEdit?.tripId ?? '')
+  const [autoGenerateId, setAutoGenerateId] = useState(() => !tripToEdit)
   const [touched, setTouched] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
@@ -49,8 +77,9 @@ export function AddMeetModal({ isOpen, onClose, years, onSubmit }: AddMeetModalP
       customDates,
       tripId,
       autoGenerateId,
+      editingTripId: tripToEdit?.tripId,
     }),
-    [mode, singleDate, startDate, endDate, customDates, tripId, autoGenerateId],
+    [mode, singleDate, startDate, endDate, customDates, tripId, autoGenerateId, tripToEdit],
   )
 
   const validation = useMemo(
@@ -62,8 +91,6 @@ export function AddMeetModal({ isOpen, onClose, years, onSubmit }: AddMeetModalP
     () => generateNextTripId(years, validation.resolvedYear),
     [years, validation.resolvedYear],
   )
-
-  if (!isOpen) return null
 
   const handleAddCustomDate = () => {
     if (!newCustomDate) return
@@ -98,9 +125,12 @@ export function AddMeetModal({ isOpen, onClose, years, onSubmit }: AddMeetModalP
     }
 
     try {
-      const success = await onSubmit(newTrip, validation.resolvedYear)
+      const success = await onSubmit(newTrip, validation.resolvedYear, tripToEdit?.tripId)
       if (success) {
-        setStatusMessage({ type: 'success', text: `Trip ${finalTripId} saved successfully!` })
+        setStatusMessage({
+          type: 'success',
+          text: `Trip ${finalTripId} ${isEditing ? 'updated' : 'saved'} successfully!`,
+        })
         setTimeout(() => {
           onClose()
           setStatusMessage(null)
@@ -109,7 +139,7 @@ export function AddMeetModal({ isOpen, onClose, years, onSubmit }: AddMeetModalP
       } else {
         setStatusMessage({
           type: 'error',
-          text: 'Failed to write to file. Please check console or download JSON export.',
+          text: 'Failed to write to file. Please check console or export JSON.',
         })
       }
     } catch (err) {
@@ -123,206 +153,170 @@ export function AddMeetModal({ isOpen, onClose, years, onSubmit }: AddMeetModalP
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs transition-opacity overflow-y-auto"
-    >
-      <div className="relative w-full max-w-xl my-8 rounded-2xl bg-white shadow-2xl border border-stone-200 overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-stone-200 px-6 py-4 bg-stone-50/70">
-          <div className="flex items-center gap-2.5">
-            <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-rose-100 text-rose-600">
-              <Calendar size={18} aria-hidden="true" />
-            </span>
-            <div>
-              <h2 id={titleId} className="text-lg font-semibold text-stone-900">
-                Add Meet Entry
-              </h2>
-              <p className="text-xs text-stone-500">
-                Log a new meet or trip and update meets.json
-              </p>
-            </div>
+    <div className="relative w-full max-w-xl my-8 rounded-2xl bg-white shadow-2xl border border-stone-200 overflow-hidden flex flex-col dark:border-stone-800 dark:bg-stone-900">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-stone-200 px-6 py-4 bg-stone-50/70 dark:border-stone-800 dark:bg-stone-850/60">
+        <div className="flex items-center gap-2.5">
+          <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
+            {isEditing ? <Edit3 size={18} aria-hidden="true" /> : <Calendar size={18} aria-hidden="true" />}
+          </span>
+          <div>
+            <h2 id={titleId} className="text-lg font-semibold text-stone-900 dark:text-stone-100">
+              {isEditing ? 'Edit Reunion Entry' : 'Add New Reunion Entry'}
+            </h2>
+            <p className="text-xs text-stone-500 dark:text-stone-400">
+              {isEditing ? `Modifying ${tripToEdit?.tripId}` : 'Log a single meet or multi-day trip'}
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close dialog"
-            className="rounded-lg p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-200/50 transition-colors"
-          >
-            <X size={18} />
-          </button>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close dialog"
+          className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 transition-colors cursor-pointer"
+        >
+          <X size={18} />
+        </button>
+      </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
-          {/* Status Message */}
-          {statusMessage && (
-            <div
-              className={`flex items-center gap-2.5 rounded-xl p-3 text-sm ${
-                statusMessage.type === 'success'
-                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                  : 'bg-rose-50 text-rose-800 border border-rose-200'
+      {/* Form Body */}
+      <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto max-h-[calc(85vh-120px)]">
+        {/* Status Message */}
+        {statusMessage && (
+          <div
+            className={`p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
+              statusMessage.type === 'success'
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900'
+                : 'bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-900'
+            }`}
+          >
+            {statusMessage.type === 'success' ? (
+              <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+            ) : (
+              <AlertCircle size={16} className="text-rose-600 dark:text-rose-400 shrink-0" />
+            )}
+            <span>{statusMessage.text}</span>
+          </div>
+        )}
+
+        {/* Mode Selector */}
+        <div>
+          <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1.5 uppercase tracking-wide">
+            Meeting Type
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => setMode('single')}
+              className={`py-2 px-3 text-xs font-medium rounded-xl border text-center transition-all cursor-pointer ${
+                mode === 'single'
+                  ? 'border-rose-500 bg-rose-50/80 text-rose-700 shadow-xs dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-700'
+                  : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-850 dark:text-stone-400'
               }`}
             >
-              {statusMessage.type === 'success' ? (
-                <CheckCircle2 size={18} className="shrink-0 text-emerald-600" />
-              ) : (
-                <AlertCircle size={18} className="shrink-0 text-rose-600" />
-              )}
-              <span>{statusMessage.text}</span>
-            </div>
-          )}
-
-          {/* Mode Selector Tabs */}
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-1.5">
-              Trip Type
-            </label>
-            <div className="grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1 border border-stone-200">
-              <button
-                type="button"
-                onClick={() => setMode('single')}
-                className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-medium transition-all ${
-                  mode === 'single'
-                    ? 'bg-white text-stone-900 shadow-xs'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-              >
-                <Calendar size={14} />
-                Single Day
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('range')}
-                className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-medium transition-all ${
-                  mode === 'range'
-                    ? 'bg-white text-stone-900 shadow-xs'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-              >
-                <CalendarRange size={14} />
-                Consecutive
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('custom')}
-                className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-medium transition-all ${
-                  mode === 'custom'
-                    ? 'bg-white text-stone-900 shadow-xs'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-              >
-                <Plus size={14} />
-                Custom Dates
-              </button>
-            </div>
+              Single Day
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('range')}
+              className={`py-2 px-3 text-xs font-medium rounded-xl border text-center transition-all cursor-pointer ${
+                mode === 'range'
+                  ? 'border-rose-500 bg-rose-50/80 text-rose-700 shadow-xs dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-700'
+                  : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-850 dark:text-stone-400'
+              }`}
+            >
+              Date Range
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('custom')}
+              className={`py-2 px-3 text-xs font-medium rounded-xl border text-center transition-all cursor-pointer ${
+                mode === 'custom'
+                  ? 'border-rose-500 bg-rose-50/80 text-rose-700 shadow-xs dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-700'
+                  : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-850 dark:text-stone-400'
+              }`}
+            >
+              Custom Dates
+            </button>
           </div>
+        </div>
 
-          {/* Date Picker Controls depending on mode */}
+        {/* Date Picker Section */}
+        <div className="space-y-3">
           {mode === 'single' && (
             <div>
-              <label htmlFor="single-date-input" className="block text-sm font-medium text-stone-700 mb-1">
-                Meet Date
+              <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">
+                Reunion Date
               </label>
               <input
-                id="single-date-input"
                 type="date"
                 value={singleDate}
                 onChange={(e) => setSingleDate(e.target.value)}
-                className={`w-full rounded-xl border px-3 py-2 text-sm text-stone-800 focus:outline-hidden focus:ring-2 ${
-                  touched && validation.errors.singleDate
-                    ? 'border-rose-400 focus:ring-rose-200'
-                    : 'border-stone-300 focus:border-rose-500 focus:ring-rose-100'
-                }`}
+                className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 bg-white text-stone-900 focus:outline-rose-500 dark:border-stone-750 dark:bg-stone-800 dark:text-stone-100"
               />
-              {touched && validation.errors.singleDate && (
-                <p className="mt-1 text-xs text-rose-600">{validation.errors.singleDate}</p>
-              )}
             </div>
           )}
 
           {mode === 'range' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="start-date-input" className="block text-sm font-medium text-stone-700 mb-1">
+                <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">
                   Start Date
                 </label>
                 <input
-                  id="start-date-input"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className={`w-full rounded-xl border px-3 py-2 text-sm text-stone-800 focus:outline-hidden focus:ring-2 ${
-                    touched && validation.errors.startDate
-                      ? 'border-rose-400 focus:ring-rose-200'
-                      : 'border-stone-300 focus:border-rose-500 focus:ring-rose-100'
-                  }`}
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 bg-white text-stone-900 focus:outline-rose-500 dark:border-stone-750 dark:bg-stone-800 dark:text-stone-100"
                 />
-                {touched && validation.errors.startDate && (
-                  <p className="mt-1 text-xs text-rose-600">{validation.errors.startDate}</p>
-                )}
               </div>
               <div>
-                <label htmlFor="end-date-input" className="block text-sm font-medium text-stone-700 mb-1">
+                <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">
                   End Date
                 </label>
                 <input
-                  id="end-date-input"
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className={`w-full rounded-xl border px-3 py-2 text-sm text-stone-800 focus:outline-hidden focus:ring-2 ${
-                    touched && validation.errors.endDate
-                      ? 'border-rose-400 focus:ring-rose-200'
-                      : 'border-stone-300 focus:border-rose-500 focus:ring-rose-100'
-                  }`}
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 bg-white text-stone-900 focus:outline-rose-500 dark:border-stone-750 dark:bg-stone-800 dark:text-stone-100"
                 />
-                {touched && validation.errors.endDate && (
-                  <p className="mt-1 text-xs text-rose-600">{validation.errors.endDate}</p>
-                )}
               </div>
             </div>
           )}
 
           {mode === 'custom' && (
-            <div className="space-y-3">
-              <div>
-                <label htmlFor="add-custom-date-input" className="block text-sm font-medium text-stone-700 mb-1">
-                  Add Dates to Trip
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    id="add-custom-date-input"
-                    type="date"
-                    value={newCustomDate}
-                    onChange={(e) => setNewCustomDate(e.target.value)}
-                    className="flex-1 rounded-xl border border-stone-300 px-3 py-2 text-sm text-stone-800 focus:border-rose-500 focus:outline-hidden focus:ring-2 focus:ring-rose-100"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddCustomDate}
-                    className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-medium text-xs transition-colors"
-                  >
-                    <Plus size={14} /> Add
-                  </button>
-                </div>
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-stone-600 dark:text-stone-400">
+                Add Dates to Trip
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={newCustomDate}
+                  onChange={(e) => setNewCustomDate(e.target.value)}
+                  className="flex-1 px-3 py-2 text-sm rounded-xl border border-stone-200 bg-white text-stone-900 focus:outline-rose-500 dark:border-stone-750 dark:bg-stone-800 dark:text-stone-100"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomDate}
+                  className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium bg-stone-100 hover:bg-stone-200 rounded-xl text-stone-700 dark:bg-stone-800 dark:hover:bg-stone-750 dark:text-stone-200 transition-colors cursor-pointer"
+                >
+                  <Plus size={14} /> Add
+                </button>
               </div>
 
               {customDates.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-2 bg-stone-50 rounded-xl border border-stone-200">
+                <div className="flex flex-wrap gap-1.5 pt-2">
                   {customDates.map((d) => (
                     <span
                       key={d}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-stone-200 text-xs text-stone-700 shadow-2xs"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-mono bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 rounded-lg border border-stone-200 dark:border-stone-700"
                     >
                       {d}
                       <button
                         type="button"
                         onClick={() => handleRemoveCustomDate(d)}
-                        className="text-stone-400 hover:text-rose-600"
-                        title="Remove date"
+                        className="text-stone-400 hover:text-rose-600 ml-0.5 cursor-pointer"
                       >
                         <Trash2 size={12} />
                       </button>
@@ -330,120 +324,137 @@ export function AddMeetModal({ isOpen, onClose, years, onSubmit }: AddMeetModalP
                   ))}
                 </div>
               )}
-              {touched && validation.errors.customDates && (
-                <p className="text-xs text-rose-600">{validation.errors.customDates}</p>
-              )}
             </div>
           )}
+        </div>
 
-          {/* Cross-date validation warning if any */}
-          {validation.errors.dates && (
-            <p className="text-xs text-rose-600">{validation.errors.dates}</p>
-          )}
+        {/* Trip ID Customization */}
+        <div className="space-y-2 pt-2 border-t border-stone-100 dark:border-stone-800">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-stone-700 dark:text-stone-300 uppercase tracking-wide">
+              Trip Identifier
+            </label>
+            <label className="inline-flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={autoGenerateId}
+                onChange={(e) => setAutoGenerateId(e.target.checked)}
+                className="rounded text-rose-600 focus:ring-rose-500"
+              />
+              Auto-generate ID
+            </label>
+          </div>
 
-          {/* Trip ID control */}
-          <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <label className="text-sm font-medium text-stone-800 flex items-center gap-1.5">
-                  Trip Identifier
-                </label>
-                <p className="text-xs text-stone-500">
-                  Target year: <span className="font-semibold text-stone-700">{validation.resolvedYear}</span>
-                </p>
-              </div>
-              <label className="inline-flex items-center gap-2 text-xs font-medium text-stone-600 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={autoGenerateId}
-                  onChange={(e) => setAutoGenerateId(e.target.checked)}
-                  className="rounded border-stone-300 text-rose-600 focus:ring-rose-500"
-                />
-                Auto-generate
-              </label>
+          {autoGenerateId ? (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-stone-50 border border-stone-200/80 text-xs text-stone-600 dark:border-stone-800 dark:bg-stone-850/60 dark:text-stone-400">
+              <span className="flex items-center gap-1.5">
+                <Sparkles size={14} className="text-amber-500" />
+                Suggested Identifier:
+              </span>
+              <span className="font-mono font-bold text-stone-900 dark:text-stone-100 bg-white dark:bg-stone-800 px-2 py-0.5 rounded border border-stone-200 dark:border-stone-700">
+                {suggestedTripId}
+              </span>
             </div>
+          ) : (
+            <input
+              type="text"
+              placeholder="e.g. 2026-T21"
+              value={tripId}
+              onChange={(e) => setTripId(e.target.value)}
+              className="w-full px-3 py-2 text-sm font-mono rounded-xl border border-stone-200 bg-white text-stone-900 focus:outline-rose-500 dark:border-stone-750 dark:bg-stone-800 dark:text-stone-100"
+            />
+          )}
+        </div>
 
-            {autoGenerateId ? (
-              <div className="flex items-center justify-between bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm">
-                <span className="font-mono font-medium text-stone-700">{suggestedTripId}</span>
-                <span className="inline-flex items-center gap-1 text-[11px] text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full font-medium">
-                  <Sparkles size={11} /> Auto Next ID
-                </span>
+        {/* Validation Errors Preview */}
+        {touched && Object.keys(validation.errors).length > 0 && (
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 dark:bg-rose-950/40 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 space-y-1">
+            {Object.values(validation.errors).map((err, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <AlertCircle size={13} className="shrink-0" />
+                <span>{err}</span>
               </div>
+            ))}
+          </div>
+        )}
+
+        {/* Summary Preview Banner */}
+        {validation.isValid && (
+          <div className="p-3.5 rounded-xl bg-rose-50/60 border border-rose-100 dark:bg-rose-950/30 dark:border-rose-900/40 text-xs space-y-1">
+            <div className="flex items-center justify-between font-medium text-stone-700 dark:text-stone-300">
+              <span>Trip ID:</span>
+              <span className="font-mono font-bold text-rose-700 dark:text-rose-400">
+                {autoGenerateId ? suggestedTripId : validation.resolvedTripId}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-stone-600 dark:text-stone-400">
+              <span>Total meet days:</span>
+              <span>
+                <strong>{validation.resolvedDates.length}</strong> {validation.isMultiDay ? '(Multi-day)' : '(Single day)'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-stone-600 dark:text-stone-400">
+              <span>Year assignment:</span>
+              <span>{validation.resolvedYear}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Form Actions */}
+        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-stone-100 dark:border-stone-800">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className="px-4 py-2 text-xs font-semibold rounded-xl text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800 transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            {submitting ? (
+              'Saving...'
+            ) : isEditing ? (
+              <>
+                <CheckCircle2 size={14} /> Save Changes
+              </>
             ) : (
-              <div>
-                <input
-                  type="text"
-                  placeholder={`e.g. ${suggestedTripId}`}
-                  value={tripId}
-                  onChange={(e) => setTripId(e.target.value)}
-                  className={`w-full rounded-xl border bg-white px-3 py-2 text-sm font-mono text-stone-800 focus:outline-hidden focus:ring-2 ${
-                    touched && validation.errors.tripId
-                      ? 'border-rose-400 focus:ring-rose-200'
-                      : 'border-stone-300 focus:border-rose-500 focus:ring-rose-100'
-                  }`}
-                />
-                {touched && validation.errors.tripId && (
-                  <p className="mt-1 text-xs text-rose-600">{validation.errors.tripId}</p>
-                )}
-              </div>
+              <>
+                <Plus size={14} /> Save Reunion Entry
+              </>
             )}
-          </div>
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
 
-          {/* Live Preview Card */}
-          <div className="rounded-xl border border-rose-100 bg-rose-50/50 p-3.5 flex items-center justify-between">
-            <div className="space-y-0.5">
-              <span className="text-[11px] font-semibold text-rose-700 uppercase tracking-wide">
-                Preview Entry
-              </span>
-              <p className="text-sm font-semibold text-stone-900">
-                {autoGenerateId ? suggestedTripId : validation.resolvedTripId || '–'}
-              </p>
-              <p className="text-xs text-stone-600">
-                {validation.resolvedDates.length > 0
-                  ? `${validation.resolvedDates.length} day${
-                      validation.resolvedDates.length > 1 ? 's' : ''
-                    } (${validation.resolvedDates[0]}${
-                      validation.resolvedDates.length > 1
-                        ? ` to ${validation.resolvedDates[validation.resolvedDates.length - 1]}`
-                        : ''
-                    })`
-                  : 'No dates selected yet'}
-              </p>
-            </div>
-            <div className="text-right">
-              <span
-                className={`inline-block px-2.5 py-1 text-xs font-medium rounded-full ${
-                  validation.isMultiDay
-                    ? 'bg-rose-100 text-rose-700'
-                    : 'bg-stone-200 text-stone-700'
-                }`}
-              >
-                {validation.isMultiDay ? 'Multi-day' : 'Single day'}
-              </span>
-            </div>
-          </div>
+export function AddMeetModal({
+  isOpen,
+  onClose,
+  years,
+  tripToEdit,
+  onSubmit,
+}: AddMeetModalProps) {
+  if (!isOpen) return null
 
-          {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 pt-2 border-t border-stone-100">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className="px-4 py-2 rounded-xl border border-stone-200 text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-xl bg-rose-600 text-sm font-medium text-white hover:bg-rose-700 transition-colors shadow-sm disabled:opacity-50"
-            >
-              {submitting ? 'Saving...' : 'Save Meet Entry'}
-            </button>
-          </div>
-        </form>
-      </div>
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs transition-opacity overflow-y-auto"
+    >
+      <AddMeetFormInner
+        key={tripToEdit?.tripId ?? 'new'}
+        onClose={onClose}
+        years={years}
+        tripToEdit={tripToEdit}
+        onSubmit={onSubmit}
+      />
     </div>
   )
 }

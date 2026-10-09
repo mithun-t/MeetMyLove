@@ -78,16 +78,16 @@ export function FutureProjectionsCard({
   }, [stats, now])
 
   return (
-    <section className="w-full min-w-0 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
+    <section className="w-full min-w-0 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5 dark:border-stone-800 dark:bg-stone-900">
       <div className="flex items-center gap-2.5 mb-5">
-        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
           <CalendarClock size={18} />
         </span>
         <div>
-          <h2 className="text-base font-semibold text-stone-900">
+          <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">
             Future Projected Milestones & Countdown
           </h2>
-          <p className="text-xs text-stone-500">
+          <p className="text-xs text-stone-500 dark:text-stone-400">
             Next reunion countdown and automated pace forecasts for upcoming milestones.
           </p>
         </div>
@@ -95,14 +95,14 @@ export function FutureProjectionsCard({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Next Meet Countdown Box */}
-        <div className="rounded-2xl border border-rose-100 bg-linear-to-br from-rose-50/70 via-white to-pink-50/40 p-4.5 flex flex-col justify-between shadow-2xs">
+        <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50/70 via-white to-pink-50/40 p-4.5 flex flex-col justify-between shadow-2xs dark:border-rose-950/60 dark:from-stone-800/80 dark:via-stone-850 dark:to-stone-900">
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
                 <Clock size={12} /> Next Reunion
               </span>
               {nextMeet && (
-                <span className="text-xs font-mono font-medium text-stone-500">
+                <span className="text-xs font-mono font-medium text-stone-500 dark:text-stone-400">
                   {nextMeet.trip.tripId}
                 </span>
               )}
@@ -110,53 +110,53 @@ export function FutureProjectionsCard({
 
             {nextMeet ? (
               <div className="space-y-1">
-                <p className="text-3xl font-extrabold tracking-tight text-stone-900">
+                <p className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100">
                   {nextMeet.daysUntil === 0 ? (
-                    <span className="text-rose-600">Reunion is Today! 🎉</span>
+                    <span className="text-rose-600 dark:text-rose-400">Reunion is Today! 🎉</span>
                   ) : (
                     <>
-                      {nextMeet.daysUntil} <span className="text-base font-medium text-stone-500">days away</span>
+                      {nextMeet.daysUntil} <span className="text-base font-medium text-stone-500 dark:text-stone-400">days away</span>
                     </>
                   )}
                 </p>
-                <p className="text-xs text-stone-600 font-medium">
+                <p className="text-xs text-stone-600 dark:text-stone-300 font-medium">
                   {formatMeetDate(nextMeet.trip.startDate)}
                   {nextMeet.trip.startDate !== nextMeet.trip.endDate &&
                     ` – ${formatMeetDate(nextMeet.trip.endDate)}`}
                 </p>
-                <p className="text-xs text-stone-400">
+                <p className="text-xs text-stone-400 dark:text-stone-500">
                   Duration: {nextMeet.trip.meetCount} meet {nextMeet.trip.meetCount === 1 ? 'day' : 'days'}
                 </p>
               </div>
             ) : (
               <div className="py-2 space-y-1">
-                <div className="flex items-center gap-2 text-stone-700 font-semibold text-base">
+                <div className="flex items-center gap-2 text-stone-700 dark:text-stone-200 font-semibold text-base">
                   <Hourglass size={18} className="text-rose-500 shrink-0" />
                   <span>No Future Dates Scheduled Yet</span>
                 </div>
-                <p className="text-xs text-stone-500 leading-relaxed">
+                <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
                   Click the <strong>"Add Meet"</strong> button at the top to log your next upcoming plan and start the live countdown!
                 </p>
               </div>
             )}
           </div>
 
-          <div className="mt-4 pt-3 border-t border-rose-100/80 flex items-center justify-between text-xs text-stone-500">
+          <div className="mt-4 pt-3 border-t border-rose-100/80 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
             <span>Last recorded meet:</span>
-            <span className="font-semibold text-stone-800">
+            <span className="font-semibold text-stone-800 dark:text-stone-200">
               {stats.latestDate ? formatMeetDate(stats.latestDate) : '–'}
             </span>
           </div>
         </div>
 
         {/* Milestone Run-Rate Forecast Box */}
-        <div className="rounded-2xl border border-stone-200 bg-stone-50/50 p-4.5 flex flex-col justify-between">
+        <div className="rounded-2xl border border-stone-200 bg-stone-50/50 p-4.5 flex flex-col justify-between dark:border-stone-800 dark:bg-stone-800/40">
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-stone-200/70 text-stone-700">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-stone-200/70 text-stone-700 dark:bg-stone-750 dark:text-stone-300">
                 <Target size={12} /> Projected Century Milestone
               </span>
-              <span className="text-xs text-rose-600 font-semibold">
+              <span className="text-xs text-rose-600 dark:text-rose-400 font-semibold">
                 {projections.daysNeeded} days to go
               </span>
             </div>
@@ -164,25 +164,25 @@ export function FutureProjectionsCard({
             {/* Target Header & Progress Bar */}
             <div className="space-y-2">
               <div className="flex items-baseline justify-between">
-                <span className="text-2xl font-bold text-stone-900">
+                <span className="text-2xl font-bold text-stone-900 dark:text-stone-100">
                   {projections.nextTarget} Days Together
                 </span>
-                <span className="text-xs font-semibold text-stone-500">
+                <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">
                   {projections.current} / {projections.nextTarget}
                 </span>
               </div>
 
               {/* Progress Bar */}
-              <div className="w-full bg-stone-200 rounded-full h-2.5 overflow-hidden">
+              <div className="w-full bg-stone-200 dark:bg-stone-700 rounded-full h-2.5 overflow-hidden">
                 <div
-                  className="bg-linear-to-r from-rose-500 to-rose-600 h-2.5 rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-rose-500 to-rose-600 h-2.5 rounded-full transition-all duration-500"
                   style={{ width: `${projections.progressPct}%` }}
                 />
               </div>
 
-              <div className="flex items-center justify-between text-xs text-stone-500 pt-0.5">
+              <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400 pt-0.5">
                 <span>Estimated arrival:</span>
-                <span className="font-semibold text-stone-900">
+                <span className="font-semibold text-stone-900 dark:text-stone-100">
                   ~ {format(projections.estimatedDate, 'MMMM yyyy')}
                 </span>
               </div>
@@ -190,12 +190,12 @@ export function FutureProjectionsCard({
           </div>
 
           {/* Subsequent Forecast Badge */}
-          <div className="mt-4 pt-3 border-t border-stone-200 flex items-center justify-between text-xs text-stone-600">
-            <span className="inline-flex items-center gap-1 text-stone-500">
+          <div className="mt-4 pt-3 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between text-xs text-stone-600 dark:text-stone-400">
+            <span className="inline-flex items-center gap-1 text-stone-500 dark:text-stone-400">
               <Sparkles size={13} className="text-amber-500" />
               Follow-up ({projections.subsequentTarget} days):
             </span>
-            <span className="font-medium text-stone-800 flex items-center gap-1">
+            <span className="font-medium text-stone-800 dark:text-stone-200 flex items-center gap-1">
               ~ {format(projections.subsequentEstimatedDate, 'MMM yyyy')}
               <ChevronRight size={13} className="text-stone-400" />
             </span>
