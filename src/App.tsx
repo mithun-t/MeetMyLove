@@ -67,7 +67,11 @@ export default function App() {
       <KpiGrid stats={stats} />
       <div className="grid w-full min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
         <AnnualChart data={stats.annual} className="lg:col-span-2" />
-        <MonthlyWiseChart data={stats.monthly} className="lg:col-span-2" />
+        <MonthlyWiseChart
+          rows={rows}
+          years={stats.annual.map((point) => point.year)}
+          className="lg:col-span-2"
+        />
         <MonthlyHeatmap cells={stats.heatmap} className="lg:col-span-2" />
         <SeasonalRadar data={stats.seasons} />
         <WeekdayChart data={stats.weekdays} />
